@@ -4,6 +4,9 @@ require 'pe_build/config'
 
 describe PEBuild::Config::PEBootstrap do
   let(:machine)  { double('machine') }
+  let(:ui)       { double('ui') }
+
+  before(:each)  { allow(machine).to receive(:ui).and_return ui }
 
   context 'when finalized with default values' do
     before(:each) { subject.finalize! }
@@ -31,6 +34,18 @@ describe PEBuild::Config::PEBootstrap do
 
         expect(errors['PE Bootstrap'].to_s).to match(/Answer_extras.*got a Hash/)
       end
+    end
+  end
+
+  describe 'version' do
+    it "produces a deprecation warning when greater than or equal to #{PEBuild::Config::PEBootstrap::AGENT_DEPRECATED_VERSION} and role is set to agent" do
+      subject.role = :agent
+      subject.version = '2015.2.0'
+
+      subject.finalize!
+      errors = subject.validate(machine)
+
+      expect(ui).to_receive(:warn)
     end
   end
 

@@ -1,6 +1,9 @@
 require 'pe_build/config/global'
+require 'pe_build/util/version_string'
 
 class PEBuild::Config::PEBootstrap < PEBuild::Config::Global
+  # Version at which support for installing agents was deprecated.
+  AGENT_DEPRECATED_VERSION  = '2015.2.0'
 
   # @!attribute master
   #   @return [String] The DNS hostname of the Puppet master for this node.
@@ -105,6 +108,7 @@ class PEBuild::Config::PEBootstrap < PEBuild::Config::Global
     validate_answer_extras(errors, machine)
     validate_relocate_manifests(errors, machine)
     validate_autosign(errors, machine)
+    validate_version(errors, machine)
 
     errors |= h.values.flatten
     {"PE Bootstrap" => errors}
@@ -171,6 +175,17 @@ class PEBuild::Config::PEBootstrap < PEBuild::Config::Global
         'pebuild.config.pe_bootstrap.errors.invalid_autosign_class',
         :autosign_class   => @autosign.class,
         :autosign_classes => VALID_AUTOSIGN_VALUES,
+      )
+    end
+  end
+
+  def validate_version(errors, machine)
+    return unless @role.intern == :agent
+
+    if PEBuild::Util::VersionString.compare(@version, AGENT_DEPRECATED_VERSION) >= 0
+      machine.ui.warn I18n.t(
+        'pebuild.config.pe_bootstrap.warnings.agent_role_deprecated',
+        :version         => @version
       )
     end
   end
